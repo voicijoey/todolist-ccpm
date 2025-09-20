@@ -4,7 +4,7 @@ status: backlog
 created: 2025-09-20T19:56:46Z
 progress: 0%
 prd: .claude/prds/todolist.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/voicijoey/todolist-ccpm/issues/1
 ---
 
 # Epic: todolist
@@ -213,16 +213,16 @@ High-level task categories that will be created:
 - Email delivery setup might require service provider evaluation
 
 ## Tasks Created
-- [ ] 001.md - Database Schema & API Foundation (parallel: false)
-- [ ] 002.md - Authentication System Implementation (parallel: false)
-- [ ] 003.md - Core Task CRUD Operations (parallel: false)
-- [ ] 004.md - Task Management UI Components (parallel: true)
-- [ ] 005.md - Priority & Category System (parallel: true)
-- [ ] 006.md - Search & Filtering System (parallel: true)
-- [ ] 007.md - Notification & Reminder System (parallel: true)
-- [ ] 008.md - Analytics Dashboard & Export (parallel: true)
+- [ ] #2 - "Database Schema & API Foundation" (parallel: false)
+- [ ] #3 - "Authentication System Implementation" (parallel: false)
+- [ ] #4 - "Core Task CRUD Operations" (parallel: false)
+- [ ] #5 - "Task Management UI Components" (parallel: true)
+- [ ] #6 - "Priority & Category System" (parallel: true)
+- [ ] #7 - "Search & Filtering System" (parallel: true)
+- [ ] #8 - "Notification & Reminder System" (parallel: true)
+- [ ] #9 - "Analytics Dashboard & Export" (parallel: true)
 
 **Total tasks:** 8
-**Parallel tasks:** 5 (tasks 004-008 can run concurrently after foundation)
-**Sequential tasks:** 3 (foundation tasks 001-003 must run in order)
+**Parallel tasks:** 5
+**Sequential tasks:** 3
 **Estimated total effort:** 102 hours (~13 days)
