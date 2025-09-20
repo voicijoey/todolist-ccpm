@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/pm:epic-decompose todolist)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
