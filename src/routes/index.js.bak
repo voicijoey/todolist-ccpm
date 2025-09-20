@@ -1,6 +1,5 @@
 const express = require('express');
 const healthRoutes = require('./health');
-const authRoutes = require('./auth');
 
 const router = express.Router();
 
@@ -26,10 +25,20 @@ router.get('/', (req, res) => {
 // Health check routes
 router.use('/health', healthRoutes);
 
-// Authentication routes
-router.use('/auth', authRoutes);
-
 // Placeholder routes for future implementation
+router.get('/auth', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Authentication endpoints will be implemented in Task 3',
+    endpoints: {
+      register: 'POST /api/auth/register',
+      login: 'POST /api/auth/login',
+      logout: 'POST /api/auth/logout',
+      refresh: 'POST /api/auth/refresh'
+    }
+  });
+});
+
 router.get('/users', (req, res) => {
   res.json({
     success: true,

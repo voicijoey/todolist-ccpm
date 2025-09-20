@@ -1,4 +1,5 @@
 const { body, param, query, validationResult } = require('express-validator');
+const { APIError } = require('./errorHandler');
 
 // Middleware to handle validation results
 const handleValidationErrors = (req, res, next) => {
@@ -10,11 +11,7 @@ const handleValidationErrors = (req, res, next) => {
       value: error.value
     }));
 
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errorMessages
-    });
+    throw new APIError('Validation failed', 400, true, errorMessages);
   }
   next();
 };
@@ -52,19 +49,6 @@ const validationRules = {
     body('password')
       .notEmpty()
       .withMessage('Password is required')
-  ],
-
-  userProfileUpdate: [
-    body('firstName')
-      .optional()
-      .trim()
-      .isLength({ min: 1, max: 50 })
-      .withMessage('First name must be between 1 and 50 characters'),
-    body('lastName')
-      .optional()
-      .trim()
-      .isLength({ min: 1, max: 50 })
-      .withMessage('Last name must be between 1 and 50 characters')
   ],
 
   // Task validation
