@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(/pm:epic-decompose todolist)"
+      "Bash(/pm:epic-decompose todolist)",
+      "Read(//c/Users/JoeyYan/Desktop/epic-todolist/.claude/epics/todolist/**)"
     ],
     "deny": [],
     "ask": []
