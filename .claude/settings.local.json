@@ -23,7 +23,14 @@
       "Bash(npm start)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Bash(npm install)",
+      "Bash(npm run dev:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(npx nodemon:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c:*)",
+      "Bash(tasklist:*)"
     ],
     "deny": [],
     "ask": []

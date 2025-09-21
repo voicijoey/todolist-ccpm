@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Todo List</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Authentication Section -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-card">
+            <h1 class="app-title">Epic Todo List</h1>
+
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form">
+                <h2>Sign In</h2>
+                <form id="login">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" required>
+                        <span class="error-message" id="login-email-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                        <span class="error-message" id="login-password-error"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                    <div class="auth-switch">
+                        Don't have an account? <a href="#" id="show-register">Sign up</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form" class="auth-form hidden">
+                <h2>Sign Up</h2>
+                <form id="register">
+                    <div class="form-group">
+                        <label for="register-username">Username</label>
+                        <input type="text" id="register-username" required>
+                        <span class="error-message" id="register-username-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required>
+                        <span class="error-message" id="register-email-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required>
+                        <span class="error-message" id="register-password-error"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign Up</button>
+                    <div class="auth-switch">
+                        Already have an account? <a href="#" id="show-login">Sign in</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app-container" class="app-container hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="app-title">Epic Todo List</h1>
+                <div class="header-actions">
+                    <span id="user-info" class="user-info"></span>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="app-nav">
+            <div class="nav-content">
+                <button id="view-all-btn" class="nav-btn active" data-view="tasks">All Tasks</button>
+                <button id="view-pending-btn" class="nav-btn" data-view="tasks">Pending</button>
+                <button id="view-completed-btn" class="nav-btn" data-view="tasks">Completed</button>
+                <button id="view-analytics-btn" class="nav-btn" data-view="analytics">Analytics</button>
+                <button id="add-task-btn" class="btn btn-primary">+ Add Task</button>
+            </div>
+        </nav>
+
+        <!-- Search and Filter Bar -->
+        <div class="search-filter-bar">
+            <div class="search-filter-content">
+                <div class="search-container">
+                <div class="search-input-wrapper">
+                    <input type="text" id="search-input" placeholder="Search tasks..." autocomplete="off">
+                    <button id="search-clear-btn" class="search-clear hidden">×</button>
+                </div>
+                <div id="search-suggestions" class="search-suggestions hidden"></div>
+            </div>
+
+            <div class="filter-container">
+                <button id="filter-toggle-btn" class="filter-toggle-btn">
+                    <span>Filters</span>
+                    <span class="filter-count hidden" id="filter-count">0</span>
+                </button>
+
+                <div id="filter-panel" class="filter-panel hidden">
+                    <div class="filter-section">
+                        <label>Priority</label>
+                        <select id="priority-filter">
+                            <option value="">All Priorities</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-section">
+                        <label>Category</label>
+                        <select id="category-filter">
+                            <option value="">All Categories</option>
+                            <option value="sales">Sales</option>
+                            <option value="operations">Operations</option>
+                            <option value="finance">Finance</option>
+                            <option value="general">General</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-section">
+                        <label>Status</label>
+                        <select id="status-filter">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-section">
+                        <label>Due Date</label>
+                        <div class="date-range">
+                            <input type="date" id="due-after-filter" placeholder="From">
+                            <input type="date" id="due-before-filter" placeholder="To">
+                        </div>
+                    </div>
+
+                    <div class="filter-section">
+                        <label>Created Date</label>
+                        <div class="date-range">
+                            <input type="date" id="created-after-filter" placeholder="From">
+                            <input type="date" id="created-before-filter" placeholder="To">
+                        </div>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button id="clear-filters-btn" class="btn btn-secondary">Clear All</button>
+                        <button id="apply-filters-btn" class="btn btn-primary">Apply</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sort-container">
+                <select id="sort-select">
+                    <option value="created_at:desc">Newest First</option>
+                    <option value="created_at:asc">Oldest First</option>
+                    <option value="due_date:asc">Due Date (Soon First)</option>
+                    <option value="due_date:desc">Due Date (Late First)</option>
+                    <option value="title:asc">Title A-Z</option>
+                    <option value="title:desc">Title Z-A</option>
+                    <option value="priority:desc">High Priority First</option>
+                    <option value="priority:asc">Low Priority First</option>
+                </select>
+            </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Task Form Modal -->
+            <div id="task-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="modal-title">Add New Task</h3>
+                        <button id="close-modal" class="close-btn">&times;</button>
+                    </div>
+                    <form id="task-form">
+                        <input type="hidden" id="task-id">
+                        <div class="form-group">
+                            <label for="task-title">Title *</label>
+                            <input type="text" id="task-title" required maxlength="255">
+                            <span class="error-message" id="task-title-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-description">Description</label>
+                            <textarea id="task-description" rows="3"></textarea>
+                            <span class="error-message" id="task-description-error"></span>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="task-priority">Priority</label>
+                                <select id="task-priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="task-category">Category</label>
+                                <select id="task-category">
+                                    <option value="general" selected>General</option>
+                                    <option value="sales">Sales</option>
+                                    <option value="operations">Operations</option>
+                                    <option value="finance">Finance</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-due-date">Due Date</label>
+                            <input type="datetime-local" id="task-due-date">
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" id="cancel-task" class="btn btn-secondary">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Task List Container -->
+            <div id="task-container" class="task-container">
+                <!-- Loading State -->
+                <div id="loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Loading tasks...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state hidden">
+                    <h3>No tasks found</h3>
+                    <p>Get started by adding your first task!</p>
+                    <button class="btn btn-primary" onclick="document.getElementById('add-task-btn').click()">
+                        Add Your First Task
+                    </button>
+                </div>
+
+                <!-- Error State -->
+                <div id="error-state" class="error-state hidden">
+                    <h3>Something went wrong</h3>
+                    <p id="error-message">Unable to load tasks. Please try again.</p>
+                    <button id="retry-btn" class="btn btn-primary">Retry</button>
+                </div>
+
+                <!-- Task List -->
+                <div id="task-list" class="task-list"></div>
+            </div>
+
+            <!-- Analytics Dashboard Container -->
+            <div id="analytics-container" class="analytics-container hidden">
+                <!-- Analytics Header -->
+                <div class="analytics-header">
+                    <h2>Analytics Dashboard</h2>
+                    <div class="analytics-controls">
+                        <div class="date-range-selector">
+                            <label for="analytics-start-date">From:</label>
+                            <input type="date" id="analytics-start-date">
+                            <label for="analytics-end-date">To:</label>
+                            <input type="date" id="analytics-end-date">
+                            <button id="apply-date-range" class="btn btn-secondary">Apply</button>
+                            <button id="reset-date-range" class="btn btn-outline">All Time</button>
+                        </div>
+                        <div class="export-controls">
+                            <button id="export-csv" class="btn btn-primary">Export CSV</button>
+                            <button id="export-pdf" class="btn btn-primary">Export PDF</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Loading State -->
+                <div id="analytics-loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Loading analytics...</p>
+                </div>
+
+                <!-- Overview Cards -->
+                <div id="overview-cards" class="overview-cards">
+                    <div class="metric-card">
+                        <div class="metric-value" id="total-tasks">0</div>
+                        <div class="metric-label">Total Tasks</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="completed-tasks">0</div>
+                        <div class="metric-label">Completed</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="completion-rate">0%</div>
+                        <div class="metric-label">Completion Rate</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="overdue-tasks">0</div>
+                        <div class="metric-label">Overdue</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="avg-completion-time">N/A</div>
+                        <div class="metric-label">Avg Completion</div>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="charts-grid">
+                    <!-- Completion Trends Chart -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Completion Trends</h3>
+                            <select id="trends-interval" class="chart-control">
+                                <option value="day">Daily</option>
+                                <option value="week">Weekly</option>
+                                <option value="month">Monthly</option>
+                            </select>
+                        </div>
+                        <canvas id="completion-trends-chart"></canvas>
+                    </div>
+
+                    <!-- Category Breakdown Chart -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Category Distribution</h3>
+                        </div>
+                        <canvas id="category-chart"></canvas>
+                    </div>
+
+                    <!-- Priority Analysis Chart -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Priority Analysis</h3>
+                        </div>
+                        <canvas id="priority-chart"></canvas>
+                    </div>
+
+                    <!-- Productivity Chart -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Daily Activity</h3>
+                        </div>
+                        <canvas id="productivity-chart"></canvas>
+                    </div>
+
+                    <!-- Day of Week Analysis -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Productivity by Day</h3>
+                        </div>
+                        <canvas id="day-of-week-chart"></canvas>
+                    </div>
+
+                    <!-- Goal Achievement -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Monthly Goals (80% Target)</h3>
+                        </div>
+                        <canvas id="goals-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Detailed Tables -->
+                <div class="analytics-tables">
+                    <div class="table-container">
+                        <h3>Category Performance</h3>
+                        <table id="category-table" class="analytics-table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Total</th>
+                                    <th>Completed</th>
+                                    <th>Rate</th>
+                                    <th>Avg Time</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <div class="table-container">
+                        <h3>Priority Analysis</h3>
+                        <table id="priority-table" class="analytics-table">
+                            <thead>
+                                <tr>
+                                    <th>Priority</th>
+                                    <th>Total</th>
+                                    <th>Completed</th>
+                                    <th>Rate</th>
+                                    <th>Overdue</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <span id="toast-message"></span>
+        <button id="toast-close" class="toast-close">&times;</button>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/search-filter.js"></script>
+    <script src="js/tasks.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/app.js"></script>
+n    <script>
+        // Initialize app based on authentication status
+        document.addEventListener("DOMContentLoaded", () => {
+            const token = localStorage.getItem("authToken");
+            const authContainer = document.getElementById("auth-container");
+            const appContainer = document.getElementById("app-container");
+
+            if (token) {
+                // User is authenticated, show app
+                authContainer.classList.add("hidden");
+                appContainer.classList.remove("hidden");
+            } else {
+                // User not authenticated, show login form
+                authContainer.classList.remove("hidden");
+                appContainer.classList.add("hidden");
+            }
+        });
+    </script>
+</body>
+</html>

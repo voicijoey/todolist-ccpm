@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Epic Todo List</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Authentication Container -->
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1 class="app-title">Epic Todo List</h1>
+
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form">
+                <h2>Sign In</h2>
+                <form id="login">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" name="email" required>
+                        <span class="error-message" id="login-email-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" name="password" required>
+                        <span class="error-message" id="login-password-error"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                    <div class="auth-switch">
+                        Don't have an account? <a href="#" id="show-register">Sign up</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form" class="auth-form hidden">
+                <h2>Sign Up</h2>
+                <form id="register">
+                    <div class="form-group">
+                        <label for="register-username">Username</label>
+                        <input type="text" id="register-username" name="username" required>
+                        <span class="error-message" id="register-username-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" name="email" required>
+                        <span class="error-message" id="register-email-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" name="password" required>
+                        <span class="error-message" id="register-password-error"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign Up</button>
+                    <div class="auth-switch">
+                        Already have an account? <a href="#" id="show-login">Sign in</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <span id="toast-message"></span>
+        <button id="toast-close" class="toast-close">&times;</button>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script>
+        /**
+         * Standalone Login Page JavaScript
+         * Handles authentication and redirects to main app
+         */
+
+        class LoginPage {
+            constructor() {
+                this.toast = new ToastNotification();
+                this.init();
+            }
+
+            init() {
+                // Check if user is already logged in
+                const token = window.api.getToken();
+                if (token) {
+                    this.redirectToApp();
+                    return;
+                }
+
+                this.bindEvents();
+            }
+
+            bindEvents() {
+                // Show register form
+                document.getElementById('show-register').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showRegisterForm();
+                });
+
+                // Show login form
+                document.getElementById('show-login').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showLoginForm();
+                });
+
+                // Login form submission
+                document.getElementById('login').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleLogin(e);
+                });
+
+                // Register form submission
+                document.getElementById('register').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleRegister(e);
+                });
+            }
+
+            showLoginForm() {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('register-form').classList.add('hidden');
+                this.clearFormErrors();
+            }
+
+            showRegisterForm() {
+                document.getElementById('register-form').classList.remove('hidden');
+                document.getElementById('login-form').classList.add('hidden');
+                this.clearFormErrors();
+            }
+
+            async handleLogin(event) {
+                const formData = new FormData(event.target);
+                const credentials = {
+                    email: formData.get('email'),
+                    password: formData.get('password')
+                };
+
+                this.clearFormErrors();
+
+                if (!credentials.email || !credentials.password) {
+                    this.showFormError('login-email', 'Please fill in all fields');
+                    return;
+                }
+
+                try {
+                    const response = await window.api.login(credentials);
+                    this.toast.success('Login successful! Redirecting...');
+
+                    // Redirect to main app after short delay
+                    setTimeout(() => {
+                        this.redirectToApp();
+                    }, 1000);
+                } catch (error) {
+                    console.error('Login error:', error);
+                    this.showFormError('login-email', error.message);
+                }
+            }
+
+            async handleRegister(event) {
+                const formData = new FormData(event.target);
+                const userData = {
+                    username: formData.get('username'),
+                    email: formData.get('email'),
+                    password: formData.get('password')
+                };
+
+                this.clearFormErrors();
+
+                if (!userData.username || !userData.email || !userData.password) {
+                    this.showFormError('register-username', 'Please fill in all fields');
+                    return;
+                }
+
+                if (userData.password.length < 6) {
+                    this.showFormError('register-password', 'Password must be at least 6 characters');
+                    return;
+                }
+
+                try {
+                    await window.api.register(userData);
+                    this.toast.success('Registration successful! Please login.');
+                    this.showLoginForm();
+
+                    // Pre-fill login form with email
+                    document.getElementById('login-email').value = userData.email;
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    this.showFormError('register-email', error.message);
+                }
+            }
+
+            redirectToApp() {
+                window.location.href = 'index.html';
+            }
+
+            showFormError(fieldId, message) {
+                const errorElement = document.getElementById(`${fieldId}-error`);
+                if (errorElement) {
+                    errorElement.textContent = message;
+                }
+            }
+
+            clearFormErrors() {
+                const errorElements = document.querySelectorAll('.error-message');
+                errorElements.forEach(element => {
+                    element.textContent = '';
+                });
+            }
+        }
+
+        /**
+         * Toast Notification System (simplified version)
+         */
+        class ToastNotification {
+            constructor() {
+                this.toastElement = document.getElementById('toast');
+                this.messageElement = document.getElementById('toast-message');
+                this.closeButton = document.getElementById('toast-close');
+                this.currentTimeout = null;
+
+                this.bindEvents();
+            }
+
+            bindEvents() {
+                this.closeButton.addEventListener('click', () => {
+                    this.hide();
+                });
+
+                this.toastElement.addEventListener('click', () => {
+                    this.hide();
+                });
+            }
+
+            show(message, type = 'info', duration = 4000) {
+                if (this.currentTimeout) {
+                    clearTimeout(this.currentTimeout);
+                }
+
+                this.messageElement.textContent = message;
+                this.toastElement.classList.remove('success', 'error', 'warning', 'info');
+
+                if (type) {
+                    this.toastElement.classList.add(type);
+                }
+
+                this.toastElement.classList.remove('hidden');
+
+                if (duration > 0) {
+                    this.currentTimeout = setTimeout(() => {
+                        this.hide();
+                    }, duration);
+                }
+            }
+
+            hide() {
+                this.toastElement.classList.add('hidden');
+                if (this.currentTimeout) {
+                    clearTimeout(this.currentTimeout);
+                    this.currentTimeout = null;
+                }
+            }
+
+            success(message, duration = 3000) {
+                this.show(message, 'success', duration);
+            }
+
+            error(message, duration = 5000) {
+                this.show(message, 'error', duration);
+            }
+        }
+
+        // Initialize login page
+        document.addEventListener('DOMContentLoaded', () => {
+            new LoginPage();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+const express = require('express');
+const healthRoutes = require('./health');
+const authRoutes = require('./auth');
+const taskRoutes = require('./tasks');
+
+const router = express.Router();
+
+// API version and info
+router.get('/', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      name: 'Todo List API',
+      version: '1.0.0',
+      description: 'RESTful API for todo list application',
+      endpoints: {
+        health: '/api/health',
+        auth: '/api/auth',
+        users: '/api/users',
+        tasks: '/api/tasks'
+      },
+      documentation: '/api/docs'
+    }
+  });
+});
+
+// Health check routes
+router.use('/health', healthRoutes);
+
+// Authentication routes
+router.use('/auth', authRoutes);
+
+// Task management routes
+router.use('/tasks', taskRoutes);
+
+// Placeholder routes for future implementation
+router.get('/users', (req, res) => {
+  res.json({
+    success: true,
+    message: 'User management endpoints will be implemented in Task 4',
+    endpoints: {
+      profile: 'GET /api/users/profile',
+      updateProfile: 'PUT /api/users/profile',
+      deleteAccount: 'DELETE /api/users/account'
+    }
+  });
+});
+
+module.exports = router;
