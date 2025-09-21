@@ -1,7 +1,6 @@
 const express = require('express');
 const healthRoutes = require('./health');
 const authRoutes = require('./auth');
-const taskRoutes = require('./tasks');
 
 const router = express.Router();
 
@@ -30,9 +29,6 @@ router.use('/health', healthRoutes);
 // Authentication routes
 router.use('/auth', authRoutes);
 
-// Task management routes
-router.use('/tasks', taskRoutes);
-
 // Placeholder routes for future implementation
 router.get('/users', (req, res) => {
   res.json({
@@ -42,6 +38,20 @@ router.get('/users', (req, res) => {
       profile: 'GET /api/users/profile',
       updateProfile: 'PUT /api/users/profile',
       deleteAccount: 'DELETE /api/users/account'
+    }
+  });
+});
+
+router.get('/tasks', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Task management endpoints will be implemented in Task 5',
+    endpoints: {
+      list: 'GET /api/tasks',
+      create: 'POST /api/tasks',
+      get: 'GET /api/tasks/:id',
+      update: 'PUT /api/tasks/:id',
+      delete: 'DELETE /api/tasks/:id'
     }
   });
 });

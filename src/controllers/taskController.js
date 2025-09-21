@@ -1,0 +1,426 @@
+const Database = require('../models/database');
+
+// Create database instance
+const db = new Database();
+
+// Helper function to connect to database
+async function ensureDbConnection() {
+  if (!db.db) {
+    await db.connect();
+  }
+}
+
+class TaskController {
+
+  /**
+   * Create a new task
+   * POST /api/tasks
+   */
+  async createTask(req, res) {
+    try {
+      await ensureDbConnection();
+      const { title, description, priority = 1, dueDate } = req.body;
+      const userId = req.user.userId;
+
+      const result = await db.run(
+        `INSERT INTO tasks (user_id, title, description, priority, due_date)
+         VALUES (?, ?, ?, ?, ?)`,
+        [userId, title, description || null, priority, dueDate || null]
+      );
+
+      // Fetch the created task
+      const task = await db.get(
+        'SELECT * FROM tasks WHERE id = ?',
+        [result.id]
+      );
+
+      res.status(201).json({
+        success: true,
+        message: 'Task created successfully',
+        data: {
+          task: this.formatTask(task)
+        }
+      });
+    } catch (error) {
+      console.error('Create task error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create task',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Get all tasks for the authenticated user
+   * GET /api/tasks
+   */
+  async getTasks(req, res) {
+    try {
+      await ensureDbConnection();
+      const userId = req.user.userId;
+      const {
+        completed,
+        priority,
+        sort = 'created_at',
+        order = 'desc',
+        limit = 50,
+        offset = 0
+      } = req.query;
+
+      // Build query with filters
+      let whereClause = 'WHERE user_id = ?';
+      const params = [userId];
+
+      if (completed !== undefined) {
+        whereClause += ' AND completed = ?';
+        params.push(completed === 'true' ? 1 : 0);
+      }
+
+      if (priority) {
+        whereClause += ' AND priority = ?';
+        params.push(parseInt(priority));
+      }
+
+      // Validate sort column
+      const validSortColumns = ['due_date', 'created_at', 'title', 'priority', 'completed'];
+      const sortColumn = validSortColumns.includes(sort) ? sort : 'created_at';
+      const sortOrder = order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+      const query = `
+        SELECT * FROM tasks
+        ${whereClause}
+        ORDER BY ${sortColumn} ${sortOrder}
+        LIMIT ? OFFSET ?
+      `;
+
+      params.push(parseInt(limit), parseInt(offset));
+
+      const tasks = await db.all(query, params);
+
+      // Get total count for pagination
+      const countQuery = `SELECT COUNT(*) as total FROM tasks ${whereClause}`;
+      const countResult = await db.get(countQuery, params.slice(0, -2)); // Remove limit and offset
+
+      res.json({
+        success: true,
+        data: {
+          tasks: tasks.map(task => this.formatTask(task)),
+          pagination: {
+            total: countResult.total,
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            page: Math.floor(parseInt(offset) / parseInt(limit)) + 1,
+            totalPages: Math.ceil(countResult.total / parseInt(limit))
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Get tasks error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve tasks',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Get a specific task by ID
+   * GET /api/tasks/:id
+   */
+  async getTask(req, res) {
+    try {
+      await ensureDbConnection();
+      const taskId = req.params.id;
+      const userId = req.user.userId;
+
+      const task = await db.get(
+        'SELECT * FROM tasks WHERE id = ? AND user_id = ?',
+        [taskId, userId]
+      );
+
+      if (!task) {
+        return res.status(404).json({
+          success: false,
+          message: 'Task not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          task: this.formatTask(task)
+        }
+      });
+    } catch (error) {
+      console.error('Get task error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve task',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Update a task
+   * PUT /api/tasks/:id
+   */
+  async updateTask(req, res) {
+    try {
+      await ensureDbConnection();
+      const taskId = req.params.id;
+      const userId = req.user.userId;
+      const { title, description, completed, priority, dueDate } = req.body;
+
+      // First check if task exists and belongs to user
+      const existingTask = await db.get(
+        'SELECT * FROM tasks WHERE id = ? AND user_id = ?',
+        [taskId, userId]
+      );
+
+      if (!existingTask) {
+        return res.status(404).json({
+          success: false,
+          message: 'Task not found'
+        });
+      }
+
+      // Build update query dynamically based on provided fields
+      const updates = [];
+      const params = [];
+
+      if (title !== undefined) {
+        updates.push('title = ?');
+        params.push(title);
+      }
+      if (description !== undefined) {
+        updates.push('description = ?');
+        params.push(description);
+      }
+      if (completed !== undefined) {
+        updates.push('completed = ?');
+        params.push(completed ? 1 : 0);
+      }
+      if (priority !== undefined) {
+        updates.push('priority = ?');
+        params.push(priority);
+      }
+      if (dueDate !== undefined) {
+        updates.push('due_date = ?');
+        params.push(dueDate);
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No fields provided to update'
+        });
+      }
+
+      // Add updated_at timestamp
+      updates.push('updated_at = CURRENT_TIMESTAMP');
+      params.push(taskId, userId);
+
+      const updateQuery = `
+        UPDATE tasks
+        SET ${updates.join(', ')}
+        WHERE id = ? AND user_id = ?
+      `;
+
+      await db.run(updateQuery, params);
+
+      // Fetch the updated task
+      const updatedTask = await db.get(
+        'SELECT * FROM tasks WHERE id = ? AND user_id = ?',
+        [taskId, userId]
+      );
+
+      res.json({
+        success: true,
+        message: 'Task updated successfully',
+        data: {
+          task: this.formatTask(updatedTask)
+        }
+      });
+    } catch (error) {
+      console.error('Update task error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update task',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Delete a task
+   * DELETE /api/tasks/:id
+   */
+  async deleteTask(req, res) {
+    try {
+      await ensureDbConnection();
+      const taskId = req.params.id;
+      const userId = req.user.userId;
+
+      // First check if task exists and belongs to user
+      const existingTask = await db.get(
+        'SELECT * FROM tasks WHERE id = ? AND user_id = ?',
+        [taskId, userId]
+      );
+
+      if (!existingTask) {
+        return res.status(404).json({
+          success: false,
+          message: 'Task not found'
+        });
+      }
+
+      // Delete the task (hard delete)
+      await db.run(
+        'DELETE FROM tasks WHERE id = ? AND user_id = ?',
+        [taskId, userId]
+      );
+
+      res.json({
+        success: true,
+        message: 'Task deleted successfully'
+      });
+    } catch (error) {
+      console.error('Delete task error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to delete task',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Bulk operations for tasks
+   * POST /api/tasks/bulk
+   */
+  async bulkOperations(req, res) {
+    try {
+      await ensureDbConnection();
+      const userId = req.user.userId;
+      const { operation, taskIds, updates } = req.body;
+
+      if (!operation || !taskIds || !Array.isArray(taskIds)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Operation and taskIds array are required'
+        });
+      }
+
+      let result = {};
+
+      switch (operation) {
+        case 'delete':
+          result = await this.bulkDelete(userId, taskIds);
+          break;
+        case 'update':
+          if (!updates) {
+            return res.status(400).json({
+              success: false,
+              message: 'Updates object is required for bulk update'
+            });
+          }
+          result = await this.bulkUpdate(userId, taskIds, updates);
+          break;
+        case 'complete':
+          result = await this.bulkUpdate(userId, taskIds, { completed: true });
+          break;
+        case 'incomplete':
+          result = await this.bulkUpdate(userId, taskIds, { completed: false });
+          break;
+        default:
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid operation. Supported: delete, update, complete, incomplete'
+          });
+      }
+
+      res.json({
+        success: true,
+        message: `Bulk ${operation} completed`,
+        data: result
+      });
+    } catch (error) {
+      console.error('Bulk operations error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to perform bulk operation',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Bulk delete tasks
+   */
+  async bulkDelete(userId, taskIds) {
+    const placeholders = taskIds.map(() => '?').join(',');
+    const query = `DELETE FROM tasks WHERE id IN (${placeholders}) AND user_id = ?`;
+    const params = [...taskIds, userId];
+
+    const result = await db.run(query, params);
+    return { deletedCount: result.changes };
+  }
+
+  /**
+   * Bulk update tasks
+   */
+  async bulkUpdate(userId, taskIds, updates) {
+    const updateFields = [];
+    const params = [];
+
+    if (updates.completed !== undefined) {
+      updateFields.push('completed = ?');
+      params.push(updates.completed ? 1 : 0);
+    }
+    if (updates.priority !== undefined) {
+      updateFields.push('priority = ?');
+      params.push(updates.priority);
+    }
+
+    if (updateFields.length === 0) {
+      throw new Error('No valid update fields provided');
+    }
+
+    updateFields.push('updated_at = CURRENT_TIMESTAMP');
+
+    const placeholders = taskIds.map(() => '?').join(',');
+    const query = `
+      UPDATE tasks
+      SET ${updateFields.join(', ')}
+      WHERE id IN (${placeholders}) AND user_id = ?
+    `;
+
+    params.push(...taskIds, userId);
+    const result = await db.run(query, params);
+
+    return { updatedCount: result.changes };
+  }
+
+  /**
+   * Format task object for API response
+   */
+  formatTask(task) {
+    if (!task) return null;
+
+    return {
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      completed: Boolean(task.completed),
+      priority: task.priority,
+      dueDate: task.due_date,
+      createdAt: task.created_at,
+      updatedAt: task.updated_at
+    };
+  }
+}
+
+module.exports = TaskController;
