@@ -163,6 +163,19 @@ class Database {
       )
     `);
 
+    // Create search_history table for search tracking
+    await this.run(`
+      CREATE TABLE IF NOT EXISTS search_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        search_term TEXT NOT NULL,
+        search_count INTEGER DEFAULT 1,
+        last_searched DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+      )
+    `);
+
     // Create indexes for better performance
     await this.run('CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)');
     await this.run('CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks (user_id)');
@@ -176,6 +189,13 @@ class Database {
     await this.run('CREATE INDEX IF NOT EXISTS idx_notifications_task_id ON notifications (task_id)');
     await this.run('CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications (type)');
     await this.run('CREATE INDEX IF NOT EXISTS idx_notifications_sent_at ON notifications (sent_at)');
+    await this.run('CREATE INDEX IF NOT EXISTS idx_search_history_user_id ON search_history (user_id)');
+    await this.run('CREATE INDEX IF NOT EXISTS idx_search_history_search_term ON search_history (search_term)');
+    await this.run('CREATE INDEX IF NOT EXISTS idx_search_history_last_searched ON search_history (last_searched)');
+
+    // Add full-text search indexes for better performance
+    await this.run('CREATE INDEX IF NOT EXISTS idx_tasks_title_search ON tasks (title)');
+    await this.run('CREATE INDEX IF NOT EXISTS idx_tasks_description_search ON tasks (description)');
 
     console.log('Database migrations completed successfully');
   }

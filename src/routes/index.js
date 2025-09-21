@@ -4,6 +4,7 @@ const authRoutes = require('./auth');
 const taskRoutes = require('./tasks');
 const notificationRoutes = require('./notifications');
 const preferencesRoutes = require('./preferences');
+const analyticsRoutes = require('./analytics');
 
 const router = express.Router();
 
@@ -21,7 +22,8 @@ router.get('/', (req, res) => {
         users: '/api/users',
         tasks: '/api/tasks',
         notifications: '/api/notifications',
-        preferences: '/api/user/preferences'
+        preferences: '/api/user/preferences',
+        analytics: '/api/analytics'
       },
       documentation: '/api/docs'
     }
@@ -42,6 +44,9 @@ router.use('/notifications', notificationRoutes);
 
 // User preference routes
 router.use('/user/preferences', preferencesRoutes);
+
+// Analytics routes
+router.use('/analytics', analyticsRoutes);
 
 // Placeholder routes for future implementation
 router.get('/users', (req, res) => {

@@ -91,6 +91,39 @@ router.get('/',
 );
 
 /**
+ * @route   GET /api/tasks/search/suggestions
+ * @desc    Get search suggestions for authenticated user
+ * @access  Private
+ */
+router.get('/search/suggestions',
+  async (req, res) => {
+    await taskController.getSearchSuggestions(req, res);
+  }
+);
+
+/**
+ * @route   GET /api/tasks/search/history
+ * @desc    Get search history for authenticated user
+ * @access  Private
+ */
+router.get('/search/history',
+  async (req, res) => {
+    await taskController.getSearchHistory(req, res);
+  }
+);
+
+/**
+ * @route   DELETE /api/tasks/search/history
+ * @desc    Clear search history for authenticated user
+ * @access  Private
+ */
+router.delete('/search/history',
+  async (req, res) => {
+    await taskController.clearSearchHistory(req, res);
+  }
+);
+
+/**
  * @route   GET /api/tasks/stats
  * @desc    Get task statistics for authenticated user
  * @access  Private

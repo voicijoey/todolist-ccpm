@@ -5,7 +5,7 @@
 
 class API {
     constructor() {
-        this.baseURL = 'http://localhost:3001/api';
+        this.baseURL = 'http://localhost:3000/api';
         this.token = localStorage.getItem('authToken');
     }
 
@@ -62,7 +62,13 @@ class API {
             // Handle 401 - Unauthorized
             if (response.status === 401) {
                 this.clearToken();
-                window.location.reload();
+                // Show login form instead of redirecting
+                const authContainer = document.getElementById("auth-container");
+                const appContainer = document.getElementById("app-container");
+                if (authContainer && appContainer) {
+                    authContainer.classList.remove("hidden");
+                    appContainer.classList.add("hidden");
+                }
                 throw new Error('Session expired. Please login again.');
             }
 
@@ -179,6 +185,158 @@ class API {
         return this.request(`/tasks/${id}`, {
             method: 'PUT',
             body: JSON.stringify({ completed })
+        });
+    }
+
+    /**
+     * Perform bulk operations on tasks
+     */
+    async bulkOperations(operation, taskIds, updates = null) {
+        return this.request('/tasks/bulk', {
+            method: 'POST',
+            body: JSON.stringify({
+                operation,
+                taskIds,
+                updates
+            })
+        });
+    }
+
+    /**
+     * Get task statistics
+     */
+    async getTaskStats(filters = {}) {
+        const queryString = new URLSearchParams(filters).toString();
+        const endpoint = queryString ? `/tasks/stats?${queryString}` : '/tasks/stats';
+        return this.request(endpoint);
+    }
+
+    /**
+     * Get search suggestions
+     */
+    async getSearchSuggestions(query) {
+        const params = new URLSearchParams({ q: query }).toString();
+        return this.request(`/tasks/search/suggestions?${params}`);
+    }
+
+    /**
+     * Get search history
+     */
+    async getSearchHistory(limit = 10) {
+        const params = new URLSearchParams({ limit: limit.toString() }).toString();
+        return this.request(`/tasks/search/history?${params}`);
+    }
+
+    /**
+     * Clear search history
+     */
+    async clearSearchHistory() {
+        return this.request('/tasks/search/history', {
+            method: 'DELETE'
+        });
+    }
+
+    // ================================
+    // Analytics
+    // ================================
+
+    /**
+     * Get analytics dashboard data
+     */
+    async getAnalyticsDashboard(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        const endpoint = queryString ? `/analytics/dashboard?${queryString}` : '/analytics/dashboard';
+        return this.request(endpoint);
+    }
+
+    /**
+     * Get analytics overview
+     */
+    async getAnalyticsOverview(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        const endpoint = queryString ? `/analytics/overview?${queryString}` : '/analytics/overview';
+        return this.request(endpoint);
+    }
+
+    /**
+     * Get completion trends
+     */
+    async getCompletionTrends(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        const endpoint = queryString ? `/analytics/completion-trends?${queryString}` : '/analytics/completion-trends';
+        return this.request(endpoint);
+    }
+
+    /**
+     * Get category breakdown
+     */
+    async getCategoryBreakdown(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        const endpoint = queryString ? `/analytics/category-breakdown?${queryString}` : '/analytics/category-breakdown';
+        return this.request(endpoint);
+    }
+
+    /**
+     * Get priority analysis
+     */
+    async getPriorityAnalysis(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        const endpoint = queryString ? `/analytics/priority-analysis?${queryString}` : '/analytics/priority-analysis';
+        return this.request(endpoint);
+    }
+
+    /**
+     * Get productivity metrics
+     */
+    async getProductivityMetrics(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        const endpoint = queryString ? `/analytics/productivity?${queryString}` : '/analytics/productivity';
+        return this.request(endpoint);
+    }
+
+    /**
+     * Get goal tracking
+     */
+    async getGoalTracking(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        const endpoint = queryString ? `/analytics/goals?${queryString}` : '/analytics/goals';
+        return this.request(endpoint);
+    }
+
+    /**
+     * Export to CSV
+     */
+    async exportCSV(data) {
+        return this.request('/analytics/export/csv', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    /**
+     * Export to PDF
+     */
+    async exportPDF(data) {
+        return this.request('/analytics/export/pdf', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    /**
+     * Get export history
+     */
+    async getExportHistory() {
+        return this.request('/analytics/exports');
+    }
+
+    /**
+     * Clean up old exports
+     */
+    async cleanupExports(data = {}) {
+        return this.request('/analytics/exports/cleanup', {
+            method: 'DELETE',
+            body: JSON.stringify(data)
         });
     }
 

@@ -34,11 +34,19 @@ app.use((req, res, next) => {
   next();
 });
 
+// Static files
+app.use(express.static('public'));
+
 // API routes
 app.use('/api', routes);
 
-// Root endpoint
+// Root endpoint - serve index.html
 app.get('/', (req, res) => {
+  res.sendFile('index.html', { root: 'public' });
+});
+
+// API info endpoint
+app.get('/api', (req, res) => {
   res.json({
     success: true,
     data: {

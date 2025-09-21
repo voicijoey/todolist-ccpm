@@ -8,6 +8,7 @@ class TaskManager {
         this.tasks = [];
         this.currentFilter = 'all'; // all, pending, completed
         this.editingTaskId = null;
+        this.searchFilterManager = null;
         this.init();
     }
 
@@ -16,25 +17,16 @@ class TaskManager {
      */
     init() {
         this.bindEvents();
+        // Initialize search and filter manager after DOM is ready
+        if (window.SearchFilterManager) {
+            this.searchFilterManager = new window.SearchFilterManager(this);
+        }
     }
 
     /**
      * Bind task-related event listeners
      */
     bindEvents() {
-        // Navigation filters
-        document.getElementById('view-all-btn').addEventListener('click', () => {
-            this.setFilter('all');
-        });
-
-        document.getElementById('view-pending-btn').addEventListener('click', () => {
-            this.setFilter('pending');
-        });
-
-        document.getElementById('view-completed-btn').addEventListener('click', () => {
-            this.setFilter('completed');
-        });
-
         // Add task button
         document.getElementById('add-task-btn').addEventListener('click', () => {
             this.showTaskModal();
@@ -76,14 +68,30 @@ class TaskManager {
     }
 
     /**
-     * Load all tasks from API
+     * Load all tasks from API with search and filter parameters
      */
     async loadTasks() {
         this.showLoading();
 
         try {
-            const response = await window.api.getTasks();
-            this.tasks = response.tasks || response || [];
+            let params = {};
+
+            // Get search and filter parameters if search filter manager is available
+            if (this.searchFilterManager) {
+                params = this.searchFilterManager.getApiParameters();
+            }
+
+            const response = await window.api.getTasks(params);
+
+            // Handle different response structures
+            if (response.data && response.data.tasks) {
+                this.tasks = response.data.tasks;
+            } else if (response.tasks) {
+                this.tasks = response.tasks;
+            } else {
+                this.tasks = response || [];
+            }
+
             this.renderTasks();
         } catch (error) {
             console.error('Failed to load tasks:', error);
@@ -96,17 +104,6 @@ class TaskManager {
      */
     setFilter(filter) {
         this.currentFilter = filter;
-
-        // Update navigation buttons
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-
-        const activeBtn = document.getElementById(`view-${filter}-btn`);
-        if (activeBtn) {
-            activeBtn.classList.add('active');
-        }
-
         this.renderTasks();
     }
 
@@ -145,31 +142,8 @@ class TaskManager {
         // Hide empty state
         this.hideEmpty();
 
-        // Sort tasks: incomplete first, then by priority, then by due date
-        const sortedTasks = filteredTasks.sort((a, b) => {
-            // Completed tasks go to bottom
-            if (a.completed !== b.completed) {
-                return a.completed ? 1 : -1;
-            }
-
-            // Sort by priority (high > medium > low)
-            const priorityOrder = { high: 3, medium: 2, low: 1 };
-            const priorityDiff = (priorityOrder[b.priority] || 2) - (priorityOrder[a.priority] || 2);
-            if (priorityDiff !== 0) return priorityDiff;
-
-            // Sort by due date (earlier first)
-            if (a.due_date && b.due_date) {
-                return new Date(a.due_date) - new Date(b.due_date);
-            }
-            if (a.due_date) return -1;
-            if (b.due_date) return 1;
-
-            // Finally sort by creation date (newer first)
-            return new Date(b.created_at) - new Date(a.created_at);
-        });
-
-        // Render task items
-        taskList.innerHTML = sortedTasks.map(task => this.renderTaskItem(task)).join('');
+        // Tasks are already sorted by the server, so just render them
+        taskList.innerHTML = filteredTasks.map(task => this.renderTaskItem(task)).join('');
 
         // Bind task-specific events
         this.bindTaskEvents();
@@ -200,6 +174,7 @@ class TaskManager {
                         ${task.description ? `<p class="task-description">${this.escapeHtml(task.description)}</p>` : ''}
                         <div class="task-meta">
                             <span class="task-priority ${task.priority}">${task.priority.toUpperCase()}</span>
+                            <span class="task-category ${task.category || 'general'}">${(task.category || 'general').toUpperCase()}</span>
                             ${dueDateText ? `<span class="task-due-date ${dueDateClass}">${dueDateText}</span>` : ''}
                         </div>
                     </div>
@@ -264,6 +239,7 @@ class TaskManager {
             document.getElementById('task-title').value = task.title;
             document.getElementById('task-description').value = task.description || '';
             document.getElementById('task-priority').value = task.priority;
+            document.getElementById('task-category').value = task.category || 'general';
 
             // Format due date for datetime-local input
             if (task.due_date) {
@@ -279,6 +255,7 @@ class TaskManager {
             this.editingTaskId = null;
             form.reset();
             document.getElementById('task-priority').value = 'medium'; // Default priority
+            document.getElementById('task-category').value = 'general'; // Default category
         }
 
         modal.classList.remove('hidden');
@@ -304,7 +281,8 @@ class TaskManager {
             title: formData.get('title') || document.getElementById('task-title').value,
             description: formData.get('description') || document.getElementById('task-description').value,
             priority: formData.get('priority') || document.getElementById('task-priority').value,
-            due_date: formData.get('due_date') || document.getElementById('task-due-date').value
+            category: formData.get('category') || document.getElementById('task-category').value,
+            dueDate: formData.get('due_date') || document.getElementById('task-due-date').value
         };
 
         // Clear previous errors
@@ -316,9 +294,9 @@ class TaskManager {
             return;
         }
 
-        // Convert empty due_date to null
-        if (!taskData.due_date) {
-            taskData.due_date = null;
+        // Convert empty dueDate to null
+        if (!taskData.dueDate) {
+            taskData.dueDate = null;
         }
 
         try {

@@ -1,34 +1,15 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 const { validationRules, handleValidationErrors } = require('../middleware/validation');
 
 const router = express.Router();
 
-// Rate limiting for authentication endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
-  message: {
-    success: false,
-    message: 'Too many authentication attempts, please try again in 15 minutes'
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
+// Use shared auth limiter from security middleware
+const { authLimiter } = require('../middleware/security');
 
-// Rate limiting for general auth endpoints
-const generalAuthLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // Higher limit for profile operations
-  message: {
-    success: false,
-    message: 'Too many requests, please try again in 15 minutes'
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
+// Use shared general limiter from security middleware
+const { generalLimiter: generalAuthLimiter } = require('../middleware/security');
 
 // Authentication routes info
 router.get('/', (req, res) => {

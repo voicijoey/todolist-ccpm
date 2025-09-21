@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(/pm:epic-decompose todolist)"
+      "Bash(/pm:epic-decompose todolist)",
+      "Bash(npm install)",
+      "Bash(npm run migrate:*)",
+      "Bash(npm run dev:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(npx nodemon:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(curl:*)",
+      "Bash(npm start)"
     ],
     "deny": [],
     "ask": []

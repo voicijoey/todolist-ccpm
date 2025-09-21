@@ -39,8 +39,8 @@ const createRateLimiter = (windowMs, max, message) => {
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => {
-      // Skip rate limiting in test environment
-      return config.nodeEnv === 'test';
+      // Skip rate limiting in test and development environment
+      return config.nodeEnv === 'test' || config.nodeEnv === 'development';
     }
   });
 };
@@ -55,7 +55,7 @@ const generalLimiter = createRateLimiter(
 // Strict rate limiter for auth endpoints
 const authLimiter = createRateLimiter(
   15 * 60 * 1000, // 15 minutes
-  5, // 5 attempts
+  15, // 15 attempts (increased for better UX)
   'Too many authentication attempts, please try again later'
 );
 
