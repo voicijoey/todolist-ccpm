@@ -3,7 +3,27 @@
     "allow": [
       "Bash(/pm:epic-decompose todolist)",
       "Read(//c/Users/JoeyYan/Desktop/epic-todolist/.claude/epics/todolist/**)",
-      "Read(//c/Users/JoeyYan/Desktop/**)"
+      "Read(//c/Users/JoeyYan/Desktop/**)",
+      "Bash(cat:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(curl:*)",
+      "Bash(npm run migrate:*)",
+      "Bash(jobs)",
+      "Bash(npm test:*)",
+      "Bash(node:*)",
+      "Bash(timeout 10 npm start)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout 10s npm start)",
+      "Bash(timeout 5s npm start)",
+      "Bash(sqlite3:*)",
+      "Bash(pkill:*)",
+      "Bash(npm start)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(gh auth:*)"
     ],
     "deny": [],
     "ask": []
