@@ -62,6 +62,7 @@ class TaskController {
       const {
         completed,
         priority,
+        category,
         sort = 'created_at',
         order = 'desc',
         limit = 50,
@@ -79,11 +80,15 @@ class TaskController {
 
       if (priority) {
         whereClause += ' AND priority = ?';
-        params.push(parseInt(priority));
+        params.push(priority);
+      }
+      if (category) {
+        whereClause += ' AND category = ?';
+        params.push(category);
       }
 
       // Validate sort column
-      const validSortColumns = ['due_date', 'created_at', 'title', 'priority', 'completed'];
+      const validSortColumns = ['due_date, created_at, title, priority, category, completed'];
       const sortColumn = validSortColumns.includes(sort) ? sort : 'created_at';
       const sortOrder = order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
