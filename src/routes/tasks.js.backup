@@ -15,16 +15,12 @@ const taskQueryValidation = [
     .withMessage('Completed must be true or false'),
   query('priority')
     .optional()
-    .isIn(['high', 'medium', 'low'])
-    .withMessage('Priority must be one of: high, medium, low'),
-  query('category')
-    .optional()
-    .isIn(['sales', 'operations', 'finance', 'general'])
-    .withMessage('Category must be one of: sales, operations, finance, general'),
+    .isInt({ min: 1, max: 5 })
+    .withMessage('Priority must be between 1 and 5'),
   query('sort')
     .optional()
-    .isIn(['due_date', 'created_at', 'title', 'priority', 'category', 'completed'])
-    .withMessage('Sort must be one of: due_date, created_at, title, priority, category, completed'),
+    .isIn(['due_date', 'created_at', 'title', 'priority', 'completed'])
+    .withMessage('Sort must be one of: due_date, created_at, title, priority, completed'),
   query('order')
     .optional()
     .isIn(['asc', 'desc'])
@@ -59,12 +55,8 @@ const bulkOperationValidation = [
     .withMessage('Updates.completed must be a boolean'),
   body('updates.priority')
     .optional()
-    .isIn(['high', 'medium', 'low'])
-    .withMessage('Updates.priority must be one of: high, medium, low'),
-  body('updates.category')
-    .optional()
-    .isIn(['sales', 'operations', 'finance', 'general'])
-    .withMessage('Updates.category must be one of: sales, operations, finance, general')
+    .isInt({ min: 1, max: 5 })
+    .withMessage('Updates.priority must be between 1 and 5')
 ];
 
 // Apply authentication to all routes
@@ -75,9 +67,8 @@ router.use(authenticateToken);
  * @desc    Get all tasks for authenticated user with filtering, sorting, and pagination
  * @access  Private
  * @query   completed - Filter by completion status (true/false)
- * @query   priority - Filter by priority (high/medium/low)
- * @query   category - Filter by category (sales/operations/finance/general)
- * @query   sort - Sort field (due_date, created_at, title, priority, category, completed)
+ * @query   priority - Filter by priority (1-5)
+ * @query   sort - Sort field (due_date, created_at, title, priority, completed)
  * @query   order - Sort order (asc/desc)
  * @query   limit - Number of results per page (1-100, default: 50)
  * @query   offset - Number of results to skip (default: 0)
@@ -91,24 +82,12 @@ router.get('/',
 );
 
 /**
- * @route   GET /api/tasks/stats
- * @desc    Get task statistics for authenticated user
- * @access  Private
- */
-router.get('/stats',
-  async (req, res) => {
-    await taskController.getStats(req, res);
-  }
-);
-
-/**
  * @route   POST /api/tasks
  * @desc    Create a new task
  * @access  Private
  * @body    title - Task title (required, 1-200 chars)
  * @body    description - Task description (optional, max 1000 chars)
- * @body    priority - Task priority (optional, high/medium/low, default: medium)
- * @body    category - Task category (optional, sales/operations/finance/general, default: general)
+ * @body    priority - Task priority (optional, 1-5, default: 1)
  * @body    dueDate - Due date (optional, ISO 8601 format)
  */
 router.post('/',
@@ -157,8 +136,7 @@ router.get('/:id',
  * @body    title - Task title (optional, 1-200 chars)
  * @body    description - Task description (optional, max 1000 chars)
  * @body    completed - Completion status (optional, boolean)
- * @body    priority - Task priority (optional, high/medium/low)
- * @body    category - Task category (optional, sales/operations/finance/general)
+ * @body    priority - Task priority (optional, 1-5)
  * @body    dueDate - Due date (optional, ISO 8601 format)
  */
 router.put('/:id',

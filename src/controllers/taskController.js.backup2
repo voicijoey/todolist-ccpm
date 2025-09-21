@@ -416,7 +416,6 @@ class TaskController {
       description: task.description,
       completed: Boolean(task.completed),
       priority: task.priority,
-      category: task.category,
       dueDate: task.due_date,
       createdAt: task.created_at,
       updatedAt: task.updated_at
@@ -424,4 +423,85 @@ class TaskController {
   }
 }
 
-module.exports = TaskController;
+  /**
+   * Get task statistics
+   * GET /api/tasks/stats
+   */
+  async getStats(req, res) {
+    try {
+      await ensureDbConnection();
+      const userId = req.user.userId;
+
+      // Get total tasks
+      const totalResult = await db.get(
+        'SELECT COUNT(*) as total FROM tasks WHERE user_id = ?',
+        [userId]
+      );
+
+      // Get completed tasks
+      const completedResult = await db.get(
+        'SELECT COUNT(*) as completed FROM tasks WHERE user_id = ? AND completed = 1',
+        [userId]
+      );
+
+      // Get tasks by priority
+      const priorityStats = await db.all(`
+        SELECT priority, COUNT(*) as count
+        FROM tasks
+        WHERE user_id = ?
+        GROUP BY priority
+      `, [userId]);
+
+      // Get tasks by category
+      const categoryStats = await db.all(`
+        SELECT category, COUNT(*) as count
+        FROM tasks
+        WHERE user_id = ?
+        GROUP BY category
+      `, [userId]);
+
+      // Get overdue tasks
+      const overdueResult = await db.get(`
+        SELECT COUNT(*) as overdue
+        FROM tasks
+        WHERE user_id = ? AND due_date < datetime('now') AND completed = 0
+      `, [userId]);
+
+      // Get due today
+      const dueTodayResult = await db.get(`
+        SELECT COUNT(*) as due_today
+        FROM tasks
+        WHERE user_id = ? AND date(due_date) = date('now') AND completed = 0
+      `, [userId]);
+
+      res.json({
+        success: true,
+        data: {
+          total: totalResult.total,
+          completed: completedResult.completed,
+          pending: totalResult.total - completedResult.completed,
+          overdue: overdueResult.overdue,
+          dueToday: dueTodayResult.due_today,
+          priorityBreakdown: priorityStats.reduce((acc, item) => {
+            acc[item.priority] = item.count;
+            return acc;
+          }, {}),
+          categoryBreakdown: categoryStats.reduce((acc, item) => {
+            acc[item.category] = item.count;
+            return acc;
+          }, {})
+        }
+      });
+    } catch (error) {
+      console.error('Get stats error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve statistics',
+        error: error.message
+      });
+    }
+  }
+
+}
+
+module.exports = new TaskController();

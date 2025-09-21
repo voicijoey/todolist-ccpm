@@ -80,12 +80,8 @@ const validationRules = {
       .withMessage('Description must not exceed 1000 characters'),
     body('priority')
       .optional()
-      .isIn(['high', 'medium', 'low'])
-      .withMessage('Priority must be one of: high, medium, low'),
-    body('category')
-      .optional()
-      .isIn(['sales', 'operations', 'finance', 'general'])
-      .withMessage('Category must be one of: sales, operations, finance, general'),
+      .isInt({ min: 1, max: 5 })
+      .withMessage('Priority must be a number between 1 and 5'),
     body('dueDate')
       .optional()
       .isISO8601()
@@ -109,12 +105,8 @@ const validationRules = {
       .withMessage('Completed must be a boolean value'),
     body('priority')
       .optional()
-      .isIn(['high', 'medium', 'low'])
-      .withMessage('Priority must be one of: high, medium, low'),
-    body('category')
-      .optional()
-      .isIn(['sales', 'operations', 'finance', 'general'])
-      .withMessage('Category must be one of: sales, operations, finance, general'),
+      .isInt({ min: 1, max: 5 })
+      .withMessage('Priority must be a number between 1 and 5'),
     body('dueDate')
       .optional()
       .isISO8601()

@@ -2,8 +2,6 @@ const express = require('express');
 const healthRoutes = require('./health');
 const authRoutes = require('./auth');
 const taskRoutes = require('./tasks');
-const notificationRoutes = require('./notifications');
-const preferencesRoutes = require('./preferences');
 
 const router = express.Router();
 
@@ -19,9 +17,7 @@ router.get('/', (req, res) => {
         health: '/api/health',
         auth: '/api/auth',
         users: '/api/users',
-        tasks: '/api/tasks',
-        notifications: '/api/notifications',
-        preferences: '/api/user/preferences'
+        tasks: '/api/tasks'
       },
       documentation: '/api/docs'
     }
@@ -36,12 +32,6 @@ router.use('/auth', authRoutes);
 
 // Task management routes
 router.use('/tasks', taskRoutes);
-
-// Notification routes
-router.use('/notifications', notificationRoutes);
-
-// User preference routes
-router.use('/user/preferences', preferencesRoutes);
 
 // Placeholder routes for future implementation
 router.get('/users', (req, res) => {

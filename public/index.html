@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Todo List</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Authentication Section -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-card">
+            <h1 class="app-title">Epic Todo List</h1>
+
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form">
+                <h2>Sign In</h2>
+                <form id="login">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" required>
+                        <span class="error-message" id="login-email-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                        <span class="error-message" id="login-password-error"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                    <div class="auth-switch">
+                        Don't have an account? <a href="#" id="show-register">Sign up</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form" class="auth-form hidden">
+                <h2>Sign Up</h2>
+                <form id="register">
+                    <div class="form-group">
+                        <label for="register-username">Username</label>
+                        <input type="text" id="register-username" required>
+                        <span class="error-message" id="register-username-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required>
+                        <span class="error-message" id="register-email-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required>
+                        <span class="error-message" id="register-password-error"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign Up</button>
+                    <div class="auth-switch">
+                        Already have an account? <a href="#" id="show-login">Sign in</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app-container" class="app-container hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="app-title">Epic Todo List</h1>
+                <div class="header-actions">
+                    <span id="user-info" class="user-info"></span>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="app-nav">
+            <div class="nav-content">
+                <button id="view-all-btn" class="nav-btn active">All Tasks</button>
+                <button id="view-pending-btn" class="nav-btn">Pending</button>
+                <button id="view-completed-btn" class="nav-btn">Completed</button>
+                <button id="add-task-btn" class="btn btn-primary">+ Add Task</button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Task Form Modal -->
+            <div id="task-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="modal-title">Add New Task</h3>
+                        <button id="close-modal" class="close-btn">&times;</button>
+                    </div>
+                    <form id="task-form">
+                        <input type="hidden" id="task-id">
+                        <div class="form-group">
+                            <label for="task-title">Title *</label>
+                            <input type="text" id="task-title" required maxlength="255">
+                            <span class="error-message" id="task-title-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-description">Description</label>
+                            <textarea id="task-description" rows="3"></textarea>
+                            <span class="error-message" id="task-description-error"></span>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="task-priority">Priority</label>
+                                <select id="task-priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="task-due-date">Due Date</label>
+                                <input type="datetime-local" id="task-due-date">
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" id="cancel-task" class="btn btn-secondary">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Task List Container -->
+            <div id="task-container" class="task-container">
+                <!-- Loading State -->
+                <div id="loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Loading tasks...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state hidden">
+                    <h3>No tasks found</h3>
+                    <p>Get started by adding your first task!</p>
+                    <button class="btn btn-primary" onclick="document.getElementById('add-task-btn').click()">
+                        Add Your First Task
+                    </button>
+                </div>
+
+                <!-- Error State -->
+                <div id="error-state" class="error-state hidden">
+                    <h3>Something went wrong</h3>
+                    <p id="error-message">Unable to load tasks. Please try again.</p>
+                    <button id="retry-btn" class="btn btn-primary">Retry</button>
+                </div>
+
+                <!-- Task List -->
+                <div id="task-list" class="task-list"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <span id="toast-message"></span>
+        <button id="toast-close" class="toast-close">&times;</button>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/tasks.js"></script>
+    <script src="js/app.js"></script>
+n    <script>
+        // Redirect to login if not authenticated
+        document.addEventListener("DOMContentLoaded", () => {
+            const token = localStorage.getItem("authToken");
+            if (!token && !window.authManager) {
+                window.location.href = "login.html";
+            }
+        });
+    </script>
+</body>
+</html>
