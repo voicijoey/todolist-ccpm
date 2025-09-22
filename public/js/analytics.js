@@ -6,6 +6,7 @@ class AnalyticsManager {
             endDate: null
         };
         this.isInitialized = false;
+        this.isLoading = false;
         this.chartColors = {
             primary: '#007bff',
             success: '#28a745',
@@ -19,8 +20,34 @@ class AnalyticsManager {
     async init() {
         if (this.isInitialized) return;
 
+        // Wait for Chart.js to load
+        await this.waitForChart();
         await this.setupEventListeners();
         this.isInitialized = true;
+    }
+
+    /**
+     * Wait for Chart.js library to load
+     */
+    async waitForChart() {
+        return new Promise((resolve) => {
+            if (typeof Chart !== 'undefined') {
+                console.log('Chart.js already loaded');
+                resolve();
+                return;
+            }
+
+            console.log('Waiting for Chart.js to load...');
+            const checkChart = () => {
+                if (typeof Chart !== 'undefined') {
+                    console.log('Chart.js loaded successfully');
+                    resolve();
+                } else {
+                    setTimeout(checkChart, 100);
+                }
+            };
+            checkChart();
+        });
     }
 
     setupEventListeners() {
@@ -49,7 +76,14 @@ class AnalyticsManager {
     }
 
     async loadDashboard() {
+        // Prevent concurrent calls
+        if (this.isLoading) {
+            console.log('Analytics dashboard already loading, skipping duplicate call');
+            return;
+        }
+
         try {
+            this.isLoading = true;
             this.showLoading();
 
             const params = {};
@@ -60,19 +94,54 @@ class AnalyticsManager {
                 params.endDate = this.currentDateRange.endDate;
             }
 
+            console.log('Loading analytics dashboard with params:', params);
             const response = await window.api.getAnalyticsDashboard(params);
+            console.log('Analytics response:', response); // Debug log
 
-            if (response.success) {
+            // Handle response format (backend returns {success, data})
+            if (response && response.success && response.data) {
                 await this.renderDashboard(response.data);
+                window.toast.success('Analytics dashboard loaded successfully');
             } else {
-                throw new Error(response.message || 'Failed to load analytics');
+                throw new Error(response?.message || 'Failed to load analytics');
             }
         } catch (error) {
             console.error('Analytics dashboard error:', error);
-            window.toast.error('Failed to load analytics dashboard');
+
+            // Show more detailed error message
+            const errorMsg = error.message || 'Failed to load analytics dashboard';
+            window.toast.error(`Analytics Error: ${errorMsg}`);
+
+            // Show empty dashboard instead of complete failure
+            this.renderEmptyDashboard();
         } finally {
             this.hideLoading();
+            this.isLoading = false;
         }
+    }
+
+    /**
+     * Render empty dashboard when no data is available
+     */
+    renderEmptyDashboard() {
+        // Show default empty state
+        const defaultData = {
+            overview: {
+                total_tasks: 0,
+                completed_tasks: 0,
+                completion_rate: 0,
+                overdue_tasks: 0,
+                avg_completion_time: 'N/A'
+            },
+            trends: [],
+            categoryBreakdown: [],
+            priorityAnalysis: [],
+            productivity: { daily_productivity: [], day_of_week_analysis: [] },
+            goals: { monthly_goals: [] }
+        };
+
+        this.updateOverviewCards(defaultData.overview);
+        console.log('Rendered empty dashboard due to error or no data');
     }
 
     async renderDashboard(data) {
@@ -82,28 +151,132 @@ class AnalyticsManager {
     }
 
     updateOverviewCards(overview) {
-        document.getElementById('total-tasks').textContent = overview.total_tasks;
-        document.getElementById('completed-tasks').textContent = overview.completed_tasks;
-        document.getElementById('completion-rate').textContent =
-            `${(overview.completion_rate * 100).toFixed(1)}%`;
-        document.getElementById('overdue-tasks').textContent = overview.overdue_tasks;
-        document.getElementById('avg-completion-time').textContent = overview.avg_completion_time;
+        const elements = {
+            'total-tasks': overview.total_tasks,
+            'completed-tasks': overview.completed_tasks,
+            'completion-rate': `${(overview.completion_rate * 100).toFixed(1)}%`,
+            'overdue-tasks': overview.overdue_tasks,
+            'avg-completion-time': overview.avg_completion_time
+        };
+
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            } else {
+                console.warn(`Overview element not found: ${id}`);
+            }
+        });
     }
 
     async renderCharts(data) {
-        await Promise.all([
-            this.renderCompletionTrends(data.trends),
-            this.renderCategoryChart(data.categoryBreakdown),
-            this.renderPriorityChart(data.priorityAnalysis),
-            this.renderProductivityChart(data.productivity.daily_productivity),
-            this.renderDayOfWeekChart(data.productivity.day_of_week_analysis),
-            this.renderGoalsChart(data.goals.monthly_goals)
-        ]);
+        console.log('Rendering charts with data:', data);
+
+        // Store data for debugging
+        window.lastAnalyticsData = data;
+
+        // Only render charts if data exists and elements are present
+        const chartPromises = [];
+
+        if (data.trends && data.trends.length > 0 && document.getElementById('completion-trends-chart')) {
+            chartPromises.push(this.renderCompletionTrends(data.trends));
+        }
+
+        if (data.categoryBreakdown && data.categoryBreakdown.length > 0 && document.getElementById('category-chart')) {
+            chartPromises.push(this.renderCategoryChart(data.categoryBreakdown));
+        }
+
+        if (data.priorityAnalysis && data.priorityAnalysis.length > 0 && document.getElementById('priority-chart')) {
+            chartPromises.push(this.renderPriorityChart(data.priorityAnalysis));
+        }
+
+        if (data.productivity?.daily_productivity && data.productivity.daily_productivity.length > 0 && document.getElementById('productivity-chart')) {
+            chartPromises.push(this.renderProductivityChart(data.productivity.daily_productivity));
+        }
+
+        if (data.productivity?.day_of_week_analysis && data.productivity.day_of_week_analysis.length > 0 && document.getElementById('day-of-week-chart')) {
+            chartPromises.push(this.renderDayOfWeekChart(data.productivity.day_of_week_analysis));
+        }
+
+        if (data.goals?.monthly_goals && data.goals.monthly_goals.length > 0 && document.getElementById('goals-chart')) {
+            chartPromises.push(this.renderGoalsChart(data.goals.monthly_goals));
+        }
+
+        // Hide/show chart containers based on data availability
+        this.toggleChartContainer('completion-trends-chart', data.trends && data.trends.length > 0);
+        this.toggleChartContainer('category-chart', data.categoryBreakdown && data.categoryBreakdown.length > 0);
+        this.toggleChartContainer('priority-chart', data.priorityAnalysis && data.priorityAnalysis.length > 0);
+        this.toggleChartContainer('productivity-chart', data.productivity?.daily_productivity && data.productivity.daily_productivity.length > 0);
+        this.toggleChartContainer('day-of-week-chart', data.productivity?.day_of_week_analysis && data.productivity.day_of_week_analysis.length > 0);
+        this.toggleChartContainer('goals-chart', data.goals?.monthly_goals && data.goals.monthly_goals.length > 0);
+
+        if (chartPromises.length > 0) {
+            await Promise.all(chartPromises);
+            console.log('Charts rendered successfully');
+        } else {
+            console.warn('No charts rendered - either no data or chart elements not found');
+            this.showEmptyChartsMessage();
+        }
+    }
+
+    /**
+     * Toggle chart container visibility based on data availability
+     */
+    toggleChartContainer(chartId, hasData) {
+        const chart = document.getElementById(chartId);
+        if (chart) {
+            const container = chart.closest('.chart-container');
+            if (container) {
+                if (hasData) {
+                    container.style.display = 'block';
+                } else {
+                    container.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    /**
+     * Show message when no charts have data
+     */
+    showEmptyChartsMessage() {
+        const chartsGrid = document.querySelector('.charts-grid');
+        if (chartsGrid) {
+            const existingMessage = chartsGrid.querySelector('.empty-charts-message');
+            if (!existingMessage) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'empty-charts-message';
+                messageDiv.style.cssText = `
+                    text-align: center;
+                    padding: 40px 20px;
+                    color: #666;
+                    background: #f9f9f9;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                `;
+                messageDiv.innerHTML = `
+                    <h3>No Chart Data Available</h3>
+                    <p>Create some tasks and complete them to see analytics charts.</p>
+                `;
+                chartsGrid.appendChild(messageDiv);
+            }
+        }
     }
 
     async renderCompletionTrends(trends) {
-        const ctx = document.getElementById('completion-trends-chart').getContext('2d');
+        const chartElement = document.getElementById('completion-trends-chart');
+        if (!chartElement) {
+            console.warn('Completion trends chart element not found');
+            return;
+        }
 
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js library is not loaded');
+            return;
+        }
+
+        const ctx = chartElement.getContext('2d');
         if (this.charts.completionTrends) {
             this.charts.completionTrends.destroy();
         }
@@ -555,15 +728,23 @@ class AnalyticsManager {
     }
 
     showLoading() {
-        document.getElementById('analytics-loading').classList.remove('hidden');
-        document.getElementById('overview-cards').style.opacity = '0.5';
-        document.getElementById('charts-grid').style.opacity = '0.5';
+        const loadingEl = document.getElementById('analytics-loading');
+        const overviewEl = document.getElementById('overview-cards');
+        const chartsEl = document.getElementById('charts-grid');
+
+        if (loadingEl) loadingEl.classList.remove('hidden');
+        if (overviewEl) overviewEl.style.opacity = '0.5';
+        if (chartsEl) chartsEl.style.opacity = '0.5';
     }
 
     hideLoading() {
-        document.getElementById('analytics-loading').classList.add('hidden');
-        document.getElementById('overview-cards').style.opacity = '1';
-        document.getElementById('charts-grid').style.opacity = '1';
+        const loadingEl = document.getElementById('analytics-loading');
+        const overviewEl = document.getElementById('overview-cards');
+        const chartsEl = document.getElementById('charts-grid');
+
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (overviewEl) overviewEl.style.opacity = '1';
+        if (chartsEl) chartsEl.style.opacity = '1';
     }
 
     destroy() {

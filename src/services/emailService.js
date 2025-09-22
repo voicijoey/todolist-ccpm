@@ -31,7 +31,7 @@ class EmailService {
       return;
     }
 
-    this.transporter = nodemailer.createTransporter(emailConfig);
+    this.transporter = nodemailer.createTransport(emailConfig);
 
     // Verify connection configuration
     this.transporter.verify((error, success) => {
@@ -46,7 +46,7 @@ class EmailService {
   async createTestAccount() {
     try {
       const testAccount = await nodemailer.createTestAccount();
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
         port: 587,
         secure: false,

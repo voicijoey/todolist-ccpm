@@ -25,7 +25,26 @@ class API {
      * Get authentication token
      */
     getToken() {
-        return this.token || localStorage.getItem('authToken');
+        const token = this.token || localStorage.getItem('authToken');
+
+        // Check if token looks like a valid JWT (should have 3 parts separated by dots)
+        if (token && typeof token === 'string' &&
+            token.split('.').length === 3 &&
+            token.startsWith('eyJ')) {
+            // Looks like a valid JWT token
+            return token;
+        } else if (token) {
+            console.warn('Invalid token found, clearing:', token);
+            this.clearToken();
+
+            // Force redirect to login
+            if (window.authManager) {
+                window.authManager.setCurrentUser(null);
+                window.authManager.showAuth();
+            }
+            return null;
+        }
+        return token;
     }
 
     /**
@@ -54,6 +73,9 @@ class API {
         // Add authorization header if token exists
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+            console.log('Authorization header set:', config.headers.Authorization.substring(0, 30) + '...');
+        } else {
+            console.log('No token available for authorization header');
         }
 
         try {
@@ -61,14 +83,33 @@ class API {
 
             // Handle 401 - Unauthorized
             if (response.status === 401) {
+                console.log('401 Unauthorized - Token expired, redirecting to login');
                 this.clearToken();
-                // Show login form instead of redirecting
+
+                // Reset current user in auth manager
+                if (window.authManager) {
+                    window.authManager.setCurrentUser(null);
+                    window.authManager.showAuth();
+                }
+
+                // Show login form
                 const authContainer = document.getElementById("auth-container");
                 const appContainer = document.getElementById("app-container");
                 if (authContainer && appContainer) {
                     authContainer.classList.remove("hidden");
                     appContainer.classList.add("hidden");
                 }
+
+                // Clear any cached data
+                if (window.taskManager) {
+                    window.taskManager.clearTasks();
+                }
+
+                // Show user-friendly message
+                if (window.toast) {
+                    window.toast.warning('Session expired. Please login again.');
+                }
+
                 throw new Error('Session expired. Please login again.');
             }
 
@@ -108,11 +149,16 @@ class API {
             body: JSON.stringify(credentials)
         });
 
-        if (response.token) {
-            this.setToken(response.token);
+        console.log('Login response received:', response);
+
+        if (response.data && response.data.tokens && response.data.tokens.accessToken) {
+            console.log('Setting token from response.data.tokens.accessToken:', response.data.tokens.accessToken);
+            this.setToken(response.data.tokens.accessToken);
+        } else {
+            console.warn('Token not found in expected location. Response structure:', JSON.stringify(response, null, 2));
         }
 
-        return response;
+        return response.data;
     }
 
     /**
@@ -126,7 +172,7 @@ class API {
      * Get current user info
      */
     async getCurrentUser() {
-        return this.request('/auth/me');
+        return this.request('/auth/profile');
     }
 
     // ================================
@@ -246,6 +292,13 @@ class API {
     async getAnalyticsDashboard(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         const endpoint = queryString ? `/analytics/dashboard?${queryString}` : '/analytics/dashboard';
+        console.log('Making analytics request to:', endpoint);
+        const token = this.getToken();
+        console.log('With auth token:', token ? 'Present' : 'Missing');
+        if (token) {
+            console.log('Token preview:', token.substring(0, 20) + '...');
+            console.log('Full token:', token);
+        }
         return this.request(endpoint);
     }
 

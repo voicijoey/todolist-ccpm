@@ -9,6 +9,8 @@ class TaskManager {
         this.currentFilter = 'all'; // all, pending, completed
         this.editingTaskId = null;
         this.searchFilterManager = null;
+        this.isSubmitting = false; // Prevent duplicate submissions
+        this.eventsBound = false; // Prevent duplicate event binding
         this.init();
     }
 
@@ -27,6 +29,12 @@ class TaskManager {
      * Bind task-related event listeners
      */
     bindEvents() {
+        // Check if events are already bound to prevent double binding
+        if (this.eventsBound) {
+            console.log('Task events already bound, skipping duplicate binding');
+            return;
+        }
+
         // Add task button
         document.getElementById('add-task-btn').addEventListener('click', () => {
             this.showTaskModal();
@@ -65,6 +73,10 @@ class TaskManager {
                 this.hideTaskModal();
             }
         });
+
+        // Mark events as bound
+        this.eventsBound = true;
+        console.log('Task events bound successfully');
     }
 
     /**
@@ -276,6 +288,12 @@ class TaskManager {
      * Handle task form submission
      */
     async handleTaskSubmit(event) {
+        // Prevent duplicate submissions
+        if (this.isSubmitting) {
+            console.log('Task submission already in progress, skipping duplicate submission');
+            return;
+        }
+
         const formData = new FormData(event.target);
         const taskData = {
             title: formData.get('title') || document.getElementById('task-title').value,
@@ -300,6 +318,15 @@ class TaskManager {
         }
 
         try {
+            this.isSubmitting = true;
+
+            // Disable submit button to prevent multiple clicks
+            const submitButton = document.querySelector('#task-form button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = this.editingTaskId ? 'Updating...' : 'Creating...';
+            }
+
             if (this.editingTaskId) {
                 // Update existing task
                 await window.api.updateTask(this.editingTaskId, taskData);
@@ -315,6 +342,15 @@ class TaskManager {
         } catch (error) {
             console.error('Failed to save task:', error);
             this.showFormError('task-title', error.message);
+        } finally {
+            this.isSubmitting = false;
+
+            // Re-enable submit button
+            const submitButton = document.querySelector('#task-form button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Save Task';
+            }
         }
     }
 

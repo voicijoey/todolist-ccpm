@@ -327,6 +327,23 @@ window.Utils = Utils;
 // Initialize the application
 const app = new App();
 
+// Initialize app based on authentication status
+document.addEventListener("DOMContentLoaded", () => {
+    const token = localStorage.getItem("authToken");
+    const authContainer = document.getElementById("auth-container");
+    const appContainer = document.getElementById("app-container");
+
+    if (token) {
+        // User is authenticated, show app
+        authContainer.classList.add("hidden");
+        appContainer.classList.remove("hidden");
+    } else {
+        // User not authenticated, show login form
+        authContainer.classList.remove("hidden");
+        appContainer.classList.add("hidden");
+    }
+});
+
 // Export for potential module usage
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { App, ToastNotification, Utils };

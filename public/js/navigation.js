@@ -78,14 +78,26 @@ class NavigationManager {
             // Update search/filter bar visibility
             this.showSearchFilter();
 
-            // Initialize task manager if not already done
+            // Wait for task manager to be initialized by tasks.js
             if (!window.taskManager) {
-                window.taskManager = new TaskManager();
+                // Task manager will be initialized by tasks.js DOMContentLoaded event
+                // Wait for it to be available
+                return new Promise((resolve) => {
+                    const checkTaskManager = () => {
+                        if (window.taskManager) {
+                            window.taskManager.setFilter(filter);
+                            window.taskManager.loadTasks().then(resolve);
+                        } else {
+                            setTimeout(checkTaskManager, 10);
+                        }
+                    };
+                    checkTaskManager();
+                });
+            } else {
+                // Load tasks with filter
+                await window.taskManager.setFilter(filter);
+                await window.taskManager.loadTasks();
             }
-
-            // Load tasks with filter
-            await window.taskManager.setFilter(filter);
-            await window.taskManager.loadTasks();
 
         } catch (error) {
             console.error('Error switching to tasks view:', error);

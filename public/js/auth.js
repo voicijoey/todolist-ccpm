@@ -17,14 +17,26 @@ class AuthManager {
         const token = window.api.getToken();
         if (token) {
             try {
-                const user = await window.api.getCurrentUser();
-                this.setCurrentUser(user);
-                this.showApp();
+                console.log('Validating existing session...');
+                const response = await window.api.getCurrentUser();
+
+                // Handle the response format from backend
+                const userData = response.data ? response.data.user : response.user;
+                if (userData) {
+                    this.setCurrentUser(userData);
+                    this.showApp();
+                    console.log('Session validated successfully:', userData.email);
+                } else {
+                    throw new Error('Invalid user data received');
+                }
             } catch (error) {
                 console.error('Failed to validate existing session:', error);
+                // Clear invalid token and show login
+                window.api.clearToken();
                 this.showAuth();
             }
         } else {
+            console.log('No existing token found, showing login');
             this.showAuth();
         }
 
@@ -100,8 +112,9 @@ class AuthManager {
 
         // Update user info display
         if (this.currentUser) {
+            const displayName = this.currentUser.first_name || this.currentUser.email || 'User';
             document.getElementById('user-info').textContent =
-                `Welcome, ${this.currentUser.username}`;
+                `Welcome, ${displayName}`;
         }
     }
 
@@ -146,7 +159,8 @@ class AuthManager {
     async handleRegister(event) {
         const formData = new FormData(event.target);
         const userData = {
-            username: formData.get('username') || document.getElementById('register-username').value,
+            firstName: formData.get('firstName') || document.getElementById('register-username').value,
+            lastName: formData.get('lastName') || '',
             email: formData.get('email') || document.getElementById('register-email').value,
             password: formData.get('password') || document.getElementById('register-password').value
         };
@@ -155,13 +169,18 @@ class AuthManager {
         this.clearFormErrors();
 
         // Basic validation
-        if (!userData.username || !userData.email || !userData.password) {
+        if (!userData.firstName || !userData.email || !userData.password) {
             this.showFormError('register-username', 'Please fill in all fields');
             return;
         }
 
-        if (userData.password.length < 6) {
-            this.showFormError('register-password', 'Password must be at least 6 characters');
+        if (userData.password.length < 8) {
+            this.showFormError('register-password', 'Password must be at least 8 characters');
+            return;
+        }
+
+        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(userData.password)) {
+            this.showFormError('register-password', 'Password must contain uppercase, lowercase and number');
             return;
         }
 
